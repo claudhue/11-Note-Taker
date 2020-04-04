@@ -1,25 +1,40 @@
-const router = require("express").Router();
-const notesDB = require("../db/db");
+// ===============================================================================
+// DEPENDENCIES
+const fs = require ('fs');
+const util = require('util');
+const writeFileAsync = util.promisify(fs.writeFile);
+const notesData = require('../db/db.json');
+// ===============================================================================
 
-
-router.get("/notes", function(req, res) {
-  notesDB
-    .getNotes()
-    .then(notes => res.json(notes))
-    .catch(err => res.status(500).json(err));
+module.exports = function(app) {
+//All notes//
+app.get('/api/notes', function (req, res) {
+  return res.json(notesData)
 });
 
-router.post("/notes", function (req, res) {
-  notesDB
-    .addNote(req.body)
-    .then((note) => res.json(note))
-    .catch(err => res.status(500).json(err));
+//Create note//
+app.post('/api/notes', function (req, res) {
+  var newNote = req.body;
+
+  notesData.push(newNote);
+  res.json(notesData)
 });
 
-router.delete("/api/notes/:id",function(req,res) {
-  notesDB({
-      _id: req.params.id
-  })
-});
+//Delete note//
+app.delete('/api/notes/:id', function (req, res) {
+  var indexValue = 0;
 
-module.exports=router
+  for (var i = 0; i < notesData.length; i++) {
+    if(notesData[i].id == req.params.id)
+    {console.log(notesData[i]);
+      indexValue = i;
+    }
+  }
+  notesData.splice(indexValue, 1);
+  writeFileAsync('../db/db.json', JSON.stringify(notesData))
+  .catch(function(err) {
+    console.log(err);
+  });
+  res.json(notesData);
+});
+};
